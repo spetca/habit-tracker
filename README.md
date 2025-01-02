@@ -8,6 +8,27 @@
 
 https://github.com/user-attachments/assets/3b161be3-3572-4256-a308-84d301db9fcb
 
+## systemd file
+
+```
+[Unit]
+Description=Habit Tracker Web Application
+After=network.target pigpiod.service
+Requires=pigpiod.service
+
+[Service]
+Type=simple
+User=username
+WorkingDirectory=/home/username/habitTracker
+ExecStart=/usr/bin/python3 /home/username/habitTracker/habit.py
+Restart=always
+RestartSec=3
+SupplementaryGroups=spi gpio
+
+[Install]
+WantedBy=multi-user.target
+```
+
 # BOM
 
 1. [Raspberry Pi Zero W](https://www.raspberrypi.com/products/raspberry-pi-zero-w/)
