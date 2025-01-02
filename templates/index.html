@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Habit Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('https://cdn.jsdelivr.net/gh/JetBrains/JetBrainsMono/web/woff2/JetBrainsMono-Regular.woff2') format('woff2');
+        }
+        * {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 0;
+            align-items: stretch;
+            margin: 20px 0;
+        }
+        .week-labels, .date-labels {
+            display: grid;
+            grid-template-rows: repeat(52, 1fr);
+            gap: 0;
+            font-size: 12px;
+            color: #666;
+            align-self: stretch;
+        }
+        .week-labels div, .date-labels div {
+            height: 20px;
+            line-height: 20px;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            padding: 0 8px;
+        }
+        .week-labels div {
+            justify-content: flex-end;
+        }
+        .grid {
+            display: grid;
+            grid-template-rows: repeat(52, 1fr);
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0;
+        }
+        .cell {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            position: relative;
+            box-sizing: border-box;
+        }
+        .cell::before {
+            content: attr(data-date);
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .cell:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+        .filled {
+            background-color: #196127;
+        }
+        .out-of-year {
+            background: repeating-linear-gradient(
+                45deg,
+                #ccc,
+                #ccc 2px,
+                #fff 2px,
+                #fff 4px
+            );
+        }
+        .today {
+            border-color: #196127;
+            border-width: 2px;
+        }
+        .legend {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+        <h1>Habit Tracker</h1>
+        <div class="legend">
+            <div class="cell"></div>
+            <span>Not completed</span>
+            <div class="cell filled"></div>
+            <span>Completed</span>
+            <div class="cell out-of-year"></div>
+            <span>Out of year</span>
+        </div>
+        <div class="grid-container">
+            <div class="week-labels" id="weekLabels"></div>
+            <div class="grid" id="habitGrid"></div>
+            <div class="date-labels" id="dateLabels"></div>
+        </div>
+    </div>
+
+    <script>
+        const grid = document.getElementById('habitGrid');
+        let habitData = {};
+
+        function getFirstMondayOfYear(year) {
+            const date = new Date(year, 0, 1);
+            while (date.getDay() !== 1) {
+                date.setDate(date.getDate() - 1);
+            }
+            return date;
+        }
+
+        function createGrid() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            let startDate = getFirstMondayOfYear(currentYear);
+            
+            grid.innerHTML = '';
+            document.getElementById('dateLabels').innerHTML = '';
+            document.getElementById('weekLabels').innerHTML = '';
+            
+            for (let week = 0; week < 52; week++) {
+                // Create week start and end dates
+                const weekStart = new Date(startDate);
+                weekStart.setDate(weekStart.getDate() + (week * 7));
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                
+                // Add week number label
+                const weekLabel = document.createElement('div');
+                weekLabel.textContent = `Week ${week + 1}`;
+                document.getElementById('weekLabels').appendChild(weekLabel);
+                
+                // Add date range label
+                const dateLabel = document.createElement('div');
+                dateLabel.textContent = `${weekStart.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                })} - ${weekEnd.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                })}`;
+                document.getElementById('dateLabels').appendChild(dateLabel);
+
+                // Create day cells
+                for (let day = 0; day < 7; day++) {
+                    const date = new Date(weekStart);
+                    date.setDate(date.getDate() + day);
+                    
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    const dateStr = date.toISOString().split('T')[0];
+                    const formattedDate = date.toLocaleDateString('en-US', { 
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                    cell.setAttribute('data-date', formattedDate);
+                    
+                    // Mark dates outside current year
+                    if (date.getFullYear() !== currentYear) {
+                        cell.classList.add('out-of-year');
+                    } else {
+                        cell.addEventListener('click', () => toggleHabit(dateStr, cell));
+                    }
+                    
+                    // Mark today
+                    if (dateStr === today.toISOString().split('T')[0]) {
+                        cell.classList.add('today');
+                    }
+                    
+                    // Mark completed
+                    if (habitData[dateStr]) {
+                        cell.classList.add('filled');
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        async function toggleHabit(date, cell) {
+            try {
+                const completed = !habitData[date];
+                console.log(`Toggling habit for ${date} to ${completed}`);
+                
+                const response = await fetch('/api/habits', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ date, completed }),
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        if (completed) {
+                            habitData[date] = 1;
+                            cell.classList.add('filled');
+                        } else {
+                            delete habitData[date];
+                            cell.classList.remove('filled');
+                        }
+                        console.log(`Successfully updated ${date} to ${completed}`);
+                    }
+                } else {
+                    console.error('Server returned error:', await response.text());
+                }
+            } catch (error) {
+                console.error('Error updating habit:', error);
+            }
+        }
+
+        async function loadHabits() {
+            try {
+                const response = await fetch('/api/habits');
+                habitData = await response.json();
+                createGrid();
+            } catch (error) {
+                console.error('Error loading habits:', error);
+            }
+        }
+
+        // Initial load
+        loadHabits();
+
+        // Check for date changes and reload grid
+        let lastCheckedDate = new Date().getDate();
+        setInterval(() => {
+            const now = new Date();
+            const currentDate = now.getDate();
+            if (currentDate !== lastCheckedDate) {
+                lastCheckedDate = currentDate;
+                loadHabits();
+            }
+        }, 60000); // Check every minute
+
+        // Periodic data sync
+        setInterval(() => {
+            loadHabits();
+        }, 300000); // Every 5 minutes
+    </script>
+</body>
+</html>
