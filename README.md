@@ -11,5 +11,5 @@ https://github.com/user-attachments/assets/3b161be3-3572-4256-a308-84d301db9fcb
 # BOM
 
 1. [Raspberry Pi Zero W](https://www.raspberrypi.com/products/raspberry-pi-zero-w/)
-2. Waveshare 2.13 in e-ink](https://www.waveshare.com/2.13inch-e-paper-hat.htm)
+2. [Waveshare 2.13 in e-ink](https://www.waveshare.com/2.13inch-e-paper-hat.htm)
 
