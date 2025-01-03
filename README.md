@@ -33,4 +33,6 @@ WantedBy=multi-user.target
 
 1. [Raspberry Pi Zero W](https://www.raspberrypi.com/products/raspberry-pi-zero-w/)
 2. [Waveshare 2.13 in e-ink](https://www.waveshare.com/2.13inch-e-paper-hat.htm)
+3. [$4 acrylic sheet](https://www.lowes.com/pd/OPTIX-0-08-in-T-x-8-in-W-x-10-in-L-Clear-Acrylic-Sheet/3143395)
+4. $1-$2 in nuts and bolts
 
