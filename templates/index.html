@@ -42,8 +42,8 @@
             grid-template-rows: repeat(52, 1fr);
             grid-template-columns: repeat(7, 1fr);
             gap: 0;
-	    border-top: 1px solid #ccc
-	    border-left: 1px solic #ccc
+            border-top: 1px solid #ccc;
+            border-left: 1px solid #ccc;
         }
         .cell {
             width: 20px;
@@ -52,6 +52,11 @@
             cursor: pointer;
             position: relative;
             box-sizing: border-box;
+            transition: background-color 0.2s;
+        }
+        .cell.updating {
+            opacity: 0.5;
+            pointer-events: none;
         }
         .cell::before {
             content: attr(data-date);
@@ -74,9 +79,9 @@
         .cell:hover::before {
             opacity: 1;
             visibility: visible;
-        }
+	}
         .filled {
-            background-color: #196127;
+            background-color: darkgreen;
         }
         .out-of-year {
             background: repeating-linear-gradient(
@@ -120,6 +125,7 @@
     <script>
         const grid = document.getElementById('habitGrid');
         let habitData = {};
+        let pendingUpdates = new Set();
 
         function getFirstMondayOfYear(year) {
             const date = new Date(year, 0, 1);
@@ -139,18 +145,15 @@
             document.getElementById('weekLabels').innerHTML = '';
             
             for (let week = 0; week < 53; week++) {
-                // Create week start and end dates
                 const weekStart = new Date(startDate);
                 weekStart.setDate(weekStart.getDate() + (week * 7));
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekEnd.getDate() + 6);
                 
-                // Add week number label
                 const weekLabel = document.createElement('div');
                 weekLabel.textContent = `Week ${week + 1}`;
                 document.getElementById('weekLabels').appendChild(weekLabel);
                 
-                // Add date range label
                 const dateLabel = document.createElement('div');
                 dateLabel.textContent = `${weekStart.toLocaleDateString('en-US', {
                     month: 'short',
@@ -161,7 +164,6 @@
                 })}`;
                 document.getElementById('dateLabels').appendChild(dateLabel);
 
-                // Create day cells
                 for (let day = 0; day < 7; day++) {
                     const date = new Date(weekStart);
                     date.setDate(date.getDate() + day);
@@ -177,22 +179,24 @@
                         day: 'numeric'
                     });
                     cell.setAttribute('data-date', formattedDate);
+                    cell.setAttribute('data-iso-date', dateStr);
                     
-                    // Mark dates outside current year
                     if (date.getFullYear() !== currentYear) {
                         cell.classList.add('out-of-year');
                     } else {
                         cell.addEventListener('click', () => toggleHabit(dateStr, cell));
                     }
                     
-                    // Mark today
                     if (dateStr === today.toISOString().split('T')[0]) {
                         cell.classList.add('today');
                     }
                     
-                    // Mark completed
                     if (habitData[dateStr]) {
                         cell.classList.add('filled');
+                    }
+
+                    if (pendingUpdates.has(dateStr)) {
+                        cell.classList.add('updating');
                     }
                     
                     grid.appendChild(cell);
@@ -201,10 +205,26 @@
         }
 
         async function toggleHabit(date, cell) {
+            if (pendingUpdates.has(date)) {
+                console.log(`Update already pending for ${date}`);
+                return;
+            }
+
             try {
                 const completed = !habitData[date];
                 console.log(`Toggling habit for ${date} to ${completed}`);
                 
+                // Immediately update UI and mark as pending
+                pendingUpdates.add(date);
+                cell.classList.add('updating');
+                if (completed) {
+                    habitData[date] = 1;
+                    cell.classList.add('filled');
+                } else {
+                    delete habitData[date];
+                    cell.classList.remove('filled');
+                }
+
                 const response = await fetch('/api/habits', {
                     method: 'POST',
                     headers: {
@@ -216,20 +236,42 @@
                 if (response.ok) {
                     const result = await response.json();
                     if (result.status === 'success') {
-                        if (completed) {
+                        console.log(`Successfully updated ${date} to ${completed}`);
+                    } else {
+                        // Revert on error
+                        if (!completed) {
                             habitData[date] = 1;
                             cell.classList.add('filled');
                         } else {
                             delete habitData[date];
                             cell.classList.remove('filled');
                         }
-                        console.log(`Successfully updated ${date} to ${completed}`);
+                        console.error('Server returned error status');
                     }
                 } else {
+                    // Revert on error
+                    if (!completed) {
+                        habitData[date] = 1;
+                        cell.classList.add('filled');
+                    } else {
+                        delete habitData[date];
+                        cell.classList.remove('filled');
+                    }
                     console.error('Server returned error:', await response.text());
                 }
             } catch (error) {
                 console.error('Error updating habit:', error);
+                // Revert on error
+                if (!habitData[date]) {
+                    habitData[date] = 1;
+                    cell.classList.add('filled');
+                } else {
+                    delete habitData[date];
+                    cell.classList.remove('filled');
+                }
+            } finally {
+                pendingUpdates.delete(date);
+                cell.classList.remove('updating');
             }
         }
 

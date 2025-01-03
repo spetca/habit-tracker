@@ -60,12 +60,13 @@ class HabitTracker:
 
     def _init_display(self):
         try:
-            # Always initialize the real display, even in test mode
             self.epd = epd2in13_V4.EPD()
             self.height = self.epd.height
             self.width = self.epd.width
             self.epd.init()
             self.epd.Clear(0xFF)
+            # Put display to sleep after initialization
+            self.epd.sleep()
         except Exception as e:
             logging.error(f"Error initializing display: {e}")
             traceback.print_exc()
@@ -135,9 +136,11 @@ class HabitTracker:
             if not self.test_mode and self.epd is None:
                 self._init_display()
             
+            self.epd.init()
+
             image = Image.new('1', (self.width, self.height), 255)
             draw = ImageDraw.Draw(image)
-            
+
             data = self.load_data()
             current_date = start_date
             
@@ -169,7 +172,7 @@ class HabitTracker:
             # Always update the physical display, even in test mode
             self.epd.display(self.epd.getbuffer(image))
             logging.info("Display updated successfully")
-            
+            self.epd.sleep()
         except Exception as e:
             logging.error(f"Error updating display: {e}")
             traceback.print_exc()
