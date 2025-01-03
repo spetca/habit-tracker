@@ -42,6 +42,8 @@
             grid-template-rows: repeat(52, 1fr);
             grid-template-columns: repeat(7, 1fr);
             gap: 0;
+	    border-top: 1px solid #ccc
+	    border-left: 1px solic #ccc
         }
         .cell {
             width: 20px;
@@ -136,7 +138,7 @@
             document.getElementById('dateLabels').innerHTML = '';
             document.getElementById('weekLabels').innerHTML = '';
             
-            for (let week = 0; week < 52; week++) {
+            for (let week = 0; week < 53; week++) {
                 // Create week start and end dates
                 const weekStart = new Date(startDate);
                 weekStart.setDate(weekStart.getDate() + (week * 7));
