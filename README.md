@@ -6,7 +6,10 @@
 - Saves data in simple json file: `{"2025-01-01": 1}`
 
 
-https://github.com/user-attachments/assets/3b161be3-3572-4256-a308-84d301db9fcb
+
+https://github.com/user-attachments/assets/108dc2b5-f7cf-4107-b306-1868ccce7f69
+
+
 
 ## systemd file
 
