@@ -5,6 +5,7 @@
 - Exposes a simple web app that displays the whole calendar year
 - Saves data in simple json file: `{"2025-01-01": 1}`
 
+<img width="581" alt="image" src="https://github.com/user-attachments/assets/968ce08d-1010-4581-8cf5-f260e60e3f51" />
 
 
 https://github.com/user-attachments/assets/108dc2b5-f7cf-4107-b306-1868ccce7f69
